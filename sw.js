@@ -7,12 +7,12 @@ self.addEventListener('activate', evt => {
 })
 
 self.addEventListener('fetch', evt => {
-  console.log("EVT", evt)
-
   const { request } = evt
   const { url, method, headers } = request
-  console.log("URL", url)
+  
   if (!url.includes(self.registration.scope + 'webtorrent/')) return null
+
+  console.log("url", url)
 
   function getConsumer(clients) {
     return new Promise(resolve => {

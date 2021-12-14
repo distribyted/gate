@@ -1,6 +1,6 @@
 
 // below this size all torrents will be completly downloaded.
-const maxSizeToDownload = 52428800
+const maxSizeToDownload = 52428800 //50MB
 // change this if it's running inside a folder
 const scope = '/'
 
@@ -34,6 +34,7 @@ const client = new WebTorrent({
 
 const sw = navigator.serviceWorker.register(`sw.js`, { scope })
 
+// start loading if we provide a magnet file or infoHash
 if (urlParams.has('tid')) {
     const tid = urlParams.get('tid')
     addTorrent(tid)
@@ -43,16 +44,24 @@ document.querySelector('form').addEventListener('submit', function (e) {
     e.preventDefault()
 
     var torrentId = document.querySelector('form input[name=torrentId]').value
-   addTorrent(torrentId)
+    addTorrent(torrentId)
 })
+
+function insertUrlParam(key, value) {
+    if (history.pushState) {
+        let searchParams = new URLSearchParams(window.location.search);
+        searchParams.set(key, value);
+        let newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + searchParams.toString();
+        window.history.pushState({ path: newurl }, '', newurl);
+    }
+}
+
 
 function addTorrent(tid) {
     client.add(tid, defaultTorrentOpts, async function (torrent) {
         await sw
 
-        // TODO
-        // urlParams.set("tid", tid)
-        // window.location.search = urlParams;
+        insertUrlParam("tid", tid)
 
         if (torrent.length > maxSizeToDownload) {
             console.log("torrent will be downloaded on demand", torrent.length)
@@ -96,17 +105,48 @@ function addTorrent(tid) {
 
         console.log("torrent added", torrent.infoHash, torrent.length)
 
-        // Get index.html
-        var indexFile = torrent.files.find(file => file.path === torrent.name + '/index.html')
+        var iframe = document.getElementById("content")
 
-        // start downloading as fast as possible.
-        indexFile.select()
+        var src = ""
+        if (urlParams.has('p')) {
+            // instead of loading index, we try to load the specified path
+            const path = urlParams.get('p')
+            src = `${scope}webtorrent/${torrent.infoHash}/${encodeURI(path)}`
+        } else {
+            // TODO INDEX IS NOT ALWAYS THERE
 
-        console.log("index file", indexFile.path)
+            // Get index.html
+            var indexFile = torrent.files.find(file => file.path === torrent.name + '/index.html')
 
-        var src = `${scope}webtorrent/${torrent.infoHash}/${encodeURI(indexFile.path)}`//specified scope in source and encoded uri of filepath to fix some weird filenames
-        document.getElementById("content").src = src
+            // start downloading as fast as possible.
+            indexFile.select()
+
+            console.log("index file", indexFile.path)
+
+            src = `${scope}webtorrent/${torrent.infoHash}/${encodeURI(indexFile.path)}`//specified scope in source and encoded uri of filepath to fix some weird filenames
+        }
+
+        iframe.src = src
+
+        var previousLocation = ""
+        setInterval(function () {
+            if (iframe.contentWindow.location.pathname == previousLocation) {
+                return
+            }
+            previousLocation = iframe.contentWindow.location.pathname
+            insertUrlParam("p", previousLocation.replace(`${scope}webtorrent/${torrent.infoHash}/`, ''))
+        }, 1000)
+
+
+
+
     })
+}
+
+const pathRe = /\.([^.\/]+)$/;
+function fileExt(path) {
+    const res = pathRe.exec(path);
+    return (res ? res[1] : undefined)
 }
 
 // Human readable bytes util
@@ -172,12 +212,16 @@ navigator.serviceWorker.addEventListener('message', evt => {
 
     var file
     file = torrent.files.find(file => file.path === filePath)
-    if (!file) {
+
+    if (!file && !fileExt(filePath)) {
         // Try to find index.html file
         indexPath = decodeURI(filePath + 'index.html')
         console.log("trying to get index", indexPath)
         file = torrent.files.find(file => file.path === indexPath)
     }
+
+    // TODO look for index.htm
+    // TODO if requested filePath is not a file, list all folder content
 
     if (!file) {
         console.log("file not found", filePath)
