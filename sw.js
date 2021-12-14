@@ -9,10 +9,16 @@ self.addEventListener('activate', evt => {
 self.addEventListener('fetch', evt => {
   const { request } = evt
   const { url, method, headers } = request
-  
+
   if (!url.includes(self.registration.scope + 'webtorrent/')) return null
 
   console.log("url", url)
+
+  // keep the worker alive
+  if (url == `${self.registration.scope}webtorrent/ping`) {
+    evt.respondWith(new Response("pong", { status: 200 }))
+    return
+  }
 
   function getConsumer(clients) {
     return new Promise(resolve => {

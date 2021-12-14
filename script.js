@@ -61,6 +61,11 @@ function addTorrent(tid) {
     client.add(tid, defaultTorrentOpts, async function (torrent) {
         await sw
 
+        // keep the service worker alive
+        setInterval(function(){
+            fetch(`${scope}webtorrent/ping`)
+        }, 10000)
+
         insertUrlParam("tid", tid)
 
         if (torrent.length > maxSizeToDownload) {
@@ -205,8 +210,9 @@ function serveFile(file, req) {
 navigator.serviceWorker.addEventListener('message', evt => {
     let [infoHash, ...filePath] = evt.data.url.split(evt.data.scope + 'webtorrent/')[1].split('/')
     filePath = decodeURI(filePath.join('/'))
-    console.log("filepath", filePath)
     if (!infoHash || !filePath) return
+
+    console.log("filepath", filePath)
 
     const torrent = client.get(infoHash)
 
