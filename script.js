@@ -62,7 +62,7 @@ function addTorrent(tid) {
         await sw
 
         // keep the service worker alive
-        setInterval(function(){
+        setInterval(function () {
             fetch(`${scope}webtorrent/ping`)
         }, 10000)
 
@@ -70,7 +70,8 @@ function addTorrent(tid) {
 
         if (torrent.length > maxSizeToDownload) {
             console.log("torrent will be downloaded on demand", torrent.length)
-            torrent.pause()
+            // Remove default selection (whole torrent)
+            torrent.deselect(0, torrent.pieces.length - 1, false)
         }
 
         // Trigger statistics refresh
@@ -118,33 +119,22 @@ function addTorrent(tid) {
             const path = urlParams.get('p')
             src = `${scope}webtorrent/${torrent.infoHash}/${encodeURI(path)}`
         } else {
-            // TODO INDEX IS NOT ALWAYS THERE
-
-            // Get index.html
-            var indexFile = torrent.files.find(file => file.path === torrent.name + '/index.html')
-
-            // start downloading as fast as possible.
-            indexFile.select()
-
-            console.log("index file", indexFile.path)
-
-            src = `${scope}webtorrent/${torrent.infoHash}/${encodeURI(indexFile.path)}`//specified scope in source and encoded uri of filepath to fix some weird filenames
+            src = `${scope}webtorrent/${torrent.infoHash}/${encodeURI(torrent.name + "/")}`
         }
 
         iframe.src = src
 
-        var previousLocation = ""
-        setInterval(function () {
-            if (iframe.contentWindow.location.pathname == previousLocation) {
-                return
-            }
-            previousLocation = iframe.contentWindow.location.pathname
-            insertUrlParam("p", previousLocation.replace(`${scope}webtorrent/${torrent.infoHash}/`, ''))
-        }, 1000)
-
-
-
-
+        // get actual iframe location
+        // TODO only do this when a share button is pressed or response is 200
+        // var previousLocation = ""
+        // setInterval(function () {
+        //     if (iframe.contentWindow.location.pathname == previousLocation) {
+        //         return
+        //     }
+        //     console.log(iframe.contentWindow.location)
+        //     previousLocation = iframe.contentWindow.location.pathname
+        //     insertUrlParam("p", previousLocation.replace(`${scope}webtorrent/${torrent.infoHash}/`, ''))
+        // }, 1000)
     })
 }
 
@@ -208,9 +198,17 @@ function serveFile(file, req) {
 
 // kind of a fetch event from service worker but for the main thread.
 navigator.serviceWorker.addEventListener('message', evt => {
+    const [port] = evt.ports
+
     let [infoHash, ...filePath] = evt.data.url.split(evt.data.scope + 'webtorrent/')[1].split('/')
     filePath = decodeURI(filePath.join('/'))
-    if (!infoHash || !filePath) return
+    if (!infoHash || !filePath) {
+        port.postMessage({
+            status: 500,
+            body: `infoHash or filePath not present. infohash=[${infoHash}] filepath=[${filePath}]`
+        })
+        return
+    }
 
     console.log("filepath", filePath)
 
@@ -227,14 +225,43 @@ navigator.serviceWorker.addEventListener('message', evt => {
     }
 
     // TODO look for index.htm
-    // TODO if requested filePath is not a file, list all folder content
 
     if (!file) {
         console.log("file not found", filePath)
+        var div = document.createElement("div")
+        var h3 = document.createElement("h3")
+        h3.innerText = "Content not found"
+        div.appendChild(h3)
+
+        var ul = document.createElement("ul")
+        torrent.files.forEach(file => {
+            var li = document.createElement("li")
+            var a = document.createElement("a")
+
+            var path = file.path.replace(`${torrent.name}/`, '')
+
+            console.log(path)
+
+            a.href = encodeURI(path)
+            a.innerText = path
+
+            li.appendChild(a)
+            ul.appendChild(li)
+        });
+
+        div.appendChild(ul)
+
+        // TODO if requested filePath is not a file, list all folder content
+        port.postMessage({
+            status: 404,
+            headers: {
+                'Content-Type': 'text/html; charset=utf-8',
+            },
+            body: div.innerHTML
+        })
         return
     }
 
-    const [port] = evt.ports
     const [response, stream] = this.serveFile(file, new Request(evt.data.url, {
         headers: evt.data.headers,
         method: evt.data.method
