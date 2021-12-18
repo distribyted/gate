@@ -12,7 +12,7 @@ Access to the content of any magnet link as a webpage.
 
 Code based on @jimmywarting [proof of concept](https://github.com/jimmywarting/webtorrent-server-browser) with some features added by @ThaUnknown
 
-Without [webtorrent.io](https://webtorrent.io) this cannot be possible.
+Without [webtorrent.io](https://webtorrent.io) this couldn't be possible.
 
 [contributors-shield]: https://img.shields.io/github/contributors/distribyted/gate.svg?style=flat-square
 [contributors-url]: https://github.com/distribyted/gate/graphs/contributors
