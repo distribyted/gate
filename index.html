@@ -3,42 +3,66 @@
 
 <head>
   <link href="favicon.png" rel="shortcut icon" />
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="bootstrap.min.css">
+  <link rel="stylesheet" href="main.css">
+
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Distribyted Gateway</title>
 </head>
 
 <body>
-  <div id="hero">
-    <div id="progressBar"></div>
-    <div id="status">
-      <form>
-        <label for="torrentId">Magnet link or infoHash: </label>
-        <input name="torrentId" placeholder="magnet:">
-        <button type="submit">Go!</button>
-      </form>
-      <div>
-        <span class="show-leech">Downloading </span>
-        <span class="show-seed">Seeding </span>
-        <code>
-          </code>
-        <span class="show-leech"> from </span>
-        <span class="show-seed"> to </span>
-        <code id="numPeers">0 peers</code>.
-      </div>
-      <div>
-        <code id="downloaded"></code>
-        of <code id="total"></code>
-        — <span id="remaining"></span><br />
-        &#x2198;<code id="downloadSpeed">0 b/s</code>
-        / &#x2197;<code id="uploadSpeed">0 b/s</code>
+  <nav class="navbar navbar-expand-lg navbar-primary bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="https://gate.distribyted.com" target="_blank">
+        <img src="favicon.png" width="24" height="24" class="d-inline-block align-text-top">
+        Gate
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText"
+        aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarText">
+        <span class="navbar-text">
+          &#x2198;<code id="downloadSpeed">0 b/s</code>
+          <div class="vr"></div>
+          &#x2197;<code id="uploadSpeed">0 b/s</code>
+          <div class="vr"></div>
+          <code id="downloaded"></code>
+          of <code id="total"></code>
+          <div class="vr"></div>
+          <code id="numPeers">0 peers</code>
+        </span>
       </div>
     </div>
+  </nav>
+  <div class="progress" style="height: 0.5rem;">
+    <div class="progress-bar progress-bar-striped progress-bar bg-success" role="progressbar" id="progressbar"
+      aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
   </div>
-  <iframe id="content" title="content">
-  </iframe>
 
+  <div class="d-flex align-items-center justify-content-center loading-div" id="loading"
+    style="display:none !important;">
+    <div class="spinner-border my-auto" style="width: 5rem; height: 5rem;" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+  </div>
+
+  <div class="container align-items-center justify-content-center" id="form">
+    <form>
+
+      <div class="input-group mb-3">
+        <input class="form-control form-control-lg" type="text" name="torrentId" placeholder="magnet:" aria-describedby="button-addon2">
+        <button class="btn btn-outline-primary" type="submit" id="button-addon2">Go!</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="d-flex align-items-center justify-content-center" id="iframe">
+    <iframe id="content" title="content" class="iframe-web-container"> </iframe>
+  </div>
+
+  <script src="bootstrap.min.js"></script>
   <script src="webtorrent.min.js"></script>
   <script src="range-parser.js"></script>
   <script src="moment.min.js"></script>
