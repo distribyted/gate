@@ -14,13 +14,14 @@ const defaultTorrentOpts = {
 
 // HTML elements
 var $body = document.body
-var $progressBar = document.querySelector('#progressBar')
+var $progressBar = document.querySelector('#progressbar')
 var $numPeers = document.querySelector('#numPeers')
 var $downloaded = document.querySelector('#downloaded')
 var $total = document.querySelector('#total')
-var $remaining = document.querySelector('#remaining')
 var $uploadSpeed = document.querySelector('#uploadSpeed')
 var $downloadSpeed = document.querySelector('#downloadSpeed')
+var $loading = document.querySelector('#loading')
+var $form = document.querySelector('#form')
 
 const queryString = window.location.search;
 const urlParams = new URLSearchParams(queryString);
@@ -58,8 +59,13 @@ function insertUrlParam(key, value) {
 
 
 function addTorrent(tid) {
+    $form.style = "display:none !important;"
+    $loading.style = "display:flex !important;"
+   
     client.add(tid, defaultTorrentOpts, async function (torrent) {
         await sw
+
+        $loading.style = "display:none !important;"
 
         // keep the service worker alive
         setInterval(function () {
@@ -89,16 +95,6 @@ function addTorrent(tid) {
             $progressBar.style.width = percent + '%'
             $downloaded.innerHTML = prettyBytes(torrent.downloaded)
             $total.innerHTML = prettyBytes(torrent.length)
-
-            // Remaining time
-            var remaining
-            if (torrent.done) {
-                remaining = 'Done.'
-            } else {
-                remaining = moment.duration(torrent.timeRemaining / 1000, 'seconds').humanize()
-                remaining = remaining[0].toUpperCase() + remaining.substring(1) + ' remaining.'
-            }
-            $remaining.innerHTML = remaining
 
             // Speed rates
             $downloadSpeed.innerHTML = prettyBytes(torrent.downloadSpeed) + '/s'
