@@ -13,8 +13,7 @@ const defaultTorrentOpts = {
 }
 
 // HTML elements
-var $body = document.body
-var $progressBar = document.querySelector('#progressbar')
+
 var $numPeers = document.querySelector('#numPeers')
 var $downloaded = document.querySelector('#downloaded')
 var $total = document.querySelector('#total')
@@ -92,7 +91,7 @@ function addTorrent(tid) {
 
             // Progress
             var percent = Math.round(torrent.progress * 100 * 100) / 100
-            $progressBar.style.width = percent + '%'
+            document.querySelector('#progressbar').style.width = percent + '%'
             $downloaded.innerHTML = prettyBytes(torrent.downloaded)
             $total.innerHTML = prettyBytes(torrent.length)
 
@@ -101,7 +100,6 @@ function addTorrent(tid) {
             $uploadSpeed.innerHTML = prettyBytes(torrent.uploadSpeed) + '/s'
         }
         function onDone() {
-            $body.className += ' is-seed'
             onProgress()
         }
 
